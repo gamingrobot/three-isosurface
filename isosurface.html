@@ -1,0 +1,257 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>isosurface</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		body {
+			background-color: #ffffff;
+			margin: 0px;
+			overflow: hidden;
+			font-family:Monospace;
+			font-size:13px;
+			text-align:center;
+			font-weight: bold;
+			text-align:center;
+		}
+
+	</style>
+</head>
+<body>
+<script src="three.min.js"></script>
+<script src="perlin.js"></script>
+
+<script>
+	var container, controls, cameralight;
+	var camera, scene, renderer, clock;
+	var uniforms, attributes;
+	var mouseX = 0, mouseY = 0;
+
+	//CONFIG
+	var voxelsize = 50;
+	var voxelscale = 100;
+	//var seed = Math.random();
+	var seed = 0.44613856147043407
+	console.log(seed)
+	noise.seed(seed);
+	var voxels = new Array(Math.pow(voxelsize, 3));
+
+	var geometry = new THREE.Geometry();
+	var vertcount = 0;
+
+	var windowHalfX = window.innerWidth / 2;
+	var windowHalfY = window.innerHeight / 2;
+
+	init();
+	animate();
+
+	function randRange(min, max){
+		return Math.random() * (max - min) + min;
+	}
+
+	function init() {
+
+		container = document.createElement( 'div' );
+		document.body.appendChild( container );
+
+		camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000 );
+		camera.position.z = 50;
+		camera.position.y = 50;
+		camera.position.x = 50;
+
+		scene = new THREE.Scene();
+
+		renderer = new THREE.WebGLRenderer({ antialiasing: true });
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		renderer.setClearColor( 0xffffff, 1 );
+		container.appendChild( renderer.domElement );
+
+		controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+		clock = new THREE.Clock();
+
+		cameralight = new THREE.PointLight(0xffffff);
+		scene.add(cameralight);
+
+		var axes = new THREE.AxisHelper(100);
+		scene.add( axes );
+
+		//VOXEL
+		for(var x=0; x<voxelsize; x++){
+			for(var y=0; y<voxelsize; y++){
+				for(var z=0; z<voxelsize; z++){
+					voxels[getIndex(x, y, z)] = noise.simplex3(x / voxelscale, y / voxelscale, z / voxelscale);
+				}
+			}
+		}
+		console.log(voxels)
+
+		//MESH
+		//doVoxel();
+		doMarching();
+		
+		//ADD MESH
+		geometry.computeBoundingSphere();
+		geometry.computeFaceNormals();
+		geometry.computeVertexNormals(); 
+		console.log(geometry);
+		var mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
+			color: 'red' 
+		}));
+		scene.add(mesh);
+
+	}
+
+	function doMarching(){
+		for(var x=0; x<voxelsize; x++){
+		for(var y=0; y<voxelsize; y++){
+		for(var z=0; z<voxelsize; z++){
+			//current voxel exists
+			if (!isEmpty(voxels[getIndex(x,y,z)])){
+				//left
+				if (x >= 1){
+					if(isEmpty(voxels[getIndex(x - 1,y,z)])) {
+						addTriangle([x, y, z], [x, y, z + 1], [x, y + 1, z + 1]);
+						addTriangle([x, y + 1, z + 1], [x, y + 1, z], [x, y, z]);	
+					}
+				}
+				//front
+				if (y >= 1){
+					if(isEmpty(voxels[getIndex(x,y - 1,z)])) {
+						addTriangle([x + 1, y, z], [x + 1, y, z + 1], [x, y, z + 1]);
+						addTriangle([x, y, z + 1], [x, y, z], [x + 1, y, z]);
+					}
+				}
+				//right
+				if (x < voxelsize - 1){
+					if(isEmpty(voxels[getIndex(x + 1,y,z)])) {
+						addTriangle([x + 1, y + 1, z + 1], [x + 1, y, z + 1], [x + 1, y, z]);
+						addTriangle([x + 1, y, z], [x + 1, y + 1, z], [x + 1, y + 1, z + 1]);
+					}
+				}
+				//back
+				if (y < voxelsize - 1){
+					if(isEmpty(voxels[getIndex(x, y + 1, z)])) {
+						addTriangle([x, y + 1, z + 1], [x + 1, y + 1, z + 1], [x + 1, y + 1, z]);
+						addTriangle([x + 1, y + 1, z], [x, y + 1, z], [x, y + 1, z + 1]);
+					}
+				}
+				//bottom
+				if (z >= 1){
+					if(isEmpty(voxels[getIndex(x,y,z - 1)])) {
+						addTriangle([x, y + 1, z], [x + 1, y + 1, z], [x + 1, y, z]);
+						addTriangle([x + 1, y, z], [x, y, z], [x, y + 1, z]);
+					}
+				}
+				//top
+				if (z < voxelsize - 1){
+					if(isEmpty(voxels[getIndex(x,y,z + 1)])) {
+						addTriangle([x + 1, y, z + 1], [x + 1, y + 1, z + 1], [x, y + 1, z + 1]);
+						addTriangle([x, y + 1, z + 1], [x, y, z + 1], [x + 1, y, z + 1]);
+					}
+				}
+			}
+		}
+		}
+		}
+	}
+
+	function doVoxel(){
+		for(var x=0; x<voxelsize; x++){
+		for(var y=0; y<voxelsize; y++){
+		for(var z=0; z<voxelsize; z++){
+			//current voxel exists
+			if (!isEmpty(voxels[getIndex(x,y,z)])){
+				//left
+				if (x >= 1){
+					if(isEmpty(voxels[getIndex(x - 1,y,z)])) {
+						addTriangle([x, y, z], [x, y, z + 1], [x, y + 1, z + 1]);
+						addTriangle([x, y + 1, z + 1], [x, y + 1, z], [x, y, z]);	
+					}
+				}
+				//front
+				if (y >= 1){
+					if(isEmpty(voxels[getIndex(x,y - 1,z)])) {
+						addTriangle([x + 1, y, z], [x + 1, y, z + 1], [x, y, z + 1]);
+						addTriangle([x, y, z + 1], [x, y, z], [x + 1, y, z]);
+					}
+				}
+				//right
+				if (x < voxelsize - 1){
+					if(isEmpty(voxels[getIndex(x + 1,y,z)])) {
+						addTriangle([x + 1, y + 1, z + 1], [x + 1, y, z + 1], [x + 1, y, z]);
+						addTriangle([x + 1, y, z], [x + 1, y + 1, z], [x + 1, y + 1, z + 1]);
+					}
+				}
+				//back
+				if (y < voxelsize - 1){
+					if(isEmpty(voxels[getIndex(x, y + 1, z)])) {
+						addTriangle([x, y + 1, z + 1], [x + 1, y + 1, z + 1], [x + 1, y + 1, z]);
+						addTriangle([x + 1, y + 1, z], [x, y + 1, z], [x, y + 1, z + 1]);
+					}
+				}
+				//bottom
+				if (z >= 1){
+					if(isEmpty(voxels[getIndex(x,y,z - 1)])) {
+						addTriangle([x, y + 1, z], [x + 1, y + 1, z], [x + 1, y, z]);
+						addTriangle([x + 1, y, z], [x, y, z], [x, y + 1, z]);
+					}
+				}
+				//top
+				if (z < voxelsize - 1){
+					if(isEmpty(voxels[getIndex(x,y,z + 1)])) {
+						addTriangle([x + 1, y, z + 1], [x + 1, y + 1, z + 1], [x, y + 1, z + 1]);
+						addTriangle([x, y + 1, z + 1], [x, y, z + 1], [x + 1, y, z + 1]);
+					}
+				}
+			}
+		}
+		}
+		}
+	}
+
+	//HELPER FUNCTIONS
+	function addTriangle(v1, v2, v3){
+		geometry.vertices.push(
+			new THREE.Vector3(v1[0],v1[1],v1[2]),
+			new THREE.Vector3(v2[0],v2[1],v2[2]),
+			new THREE.Vector3(v3[0],v3[1],v3[2])
+		);
+		geometry.faces.push(new THREE.Face3(vertcount, vertcount+1, vertcount+2));
+		vertcount += 3;
+	}
+
+	function getIndex(x, y, z){
+		return x + voxelsize * (y + voxelsize * z)
+	}
+
+	function isEmpty(iso){
+		if(iso < 0.0){
+			return true
+		}
+		return false
+	}
+
+
+	function animate() {
+
+		requestAnimationFrame( animate );
+		render(clock.getDelta());
+		controls.update();
+		cameralight.position = camera.position.clone();
+
+	}
+
+	function render(dt) {
+		camera.lookAt( scene.position );
+
+		renderer.render( scene, camera );
+
+	}
+
+
+</script>
+</body>
+</html>
