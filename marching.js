@@ -4,70 +4,109 @@ function doMarching(){
 	for(var z=0; z<voxelsize; z++){
 		//current voxel exists
 		if (!isEmpty(voxels[getIndex(x,y,z)])){
-			//left
-			if (x >= 1){
-				if(isEmpty(voxels[getIndex(x - 1,y,z)])) {
-					addTriangle([x, y, z], [x, y, z + 1], [x, y + 1, z + 1]);
-					addTriangle([x, y + 1, z + 1], [x, y + 1, z], [x, y, z]);	
-				}
-			}
-			//front
-			if (y >= 1){
-				if(isEmpty(voxels[getIndex(x,y - 1,z)])) {
-					addTriangle([x + 1, y, z], [x + 1, y, z + 1], [x, y, z + 1]);
-					addTriangle([x, y, z + 1], [x, y, z], [x + 1, y, z]);
-				}
-			}
-			//right
-			if (x < voxelsize - 1){
-				if(isEmpty(voxels[getIndex(x + 1,y,z)])) {
-					addTriangle([x + 1, y + 1, z + 1], [x + 1, y, z + 1], [x + 1, y, z]);
-					addTriangle([x + 1, y, z], [x + 1, y + 1, z], [x + 1, y + 1, z + 1]);
-				}
-			}
-			//back
-			if (y < voxelsize - 1){
-				if(isEmpty(voxels[getIndex(x, y + 1, z)])) {
-					addTriangle([x, y + 1, z + 1], [x + 1, y + 1, z + 1], [x + 1, y + 1, z]);
-					addTriangle([x + 1, y + 1, z], [x, y + 1, z], [x, y + 1, z + 1]);
-				}
-			}
-			//bottom
-			if (z >= 1){
-				if(isEmpty(voxels[getIndex(x,y,z - 1)])) {
-					addTriangle([x, y + 1, z], [x + 1, y + 1, z], [x + 1, y, z]);
-					addTriangle([x + 1, y, z], [x, y, z], [x, y + 1, z]);
-				}
-			}
-			//top
-			if (z < voxelsize - 1){
-				if(isEmpty(voxels[getIndex(x,y,z + 1)])) {
-					addTriangle([x + 1, y, z + 1], [x + 1, y + 1, z + 1], [x, y + 1, z + 1]);
-					addTriangle([x, y + 1, z + 1], [x, y, z + 1], [x + 1, y, z + 1]);
-				}
-			}
+			var cell = {"val": [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0], "pos": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] }
+			
+			cell.pos[0] = [x, y, z];
+            cell.pos[1] = [x + 1, y, z];
+            cell.pos[2] = [x + 1, y + 1, z];
+            cell.pos[3] = [x, y + 1, z];
+            cell.pos[4] = [x, y, z + 1];
+            cell.pos[5] = [x + 1, y, z + 1];
+            cell.pos[6] = [x + 1, y + 1, z + 1];
+            cell.pos[7] = [x, y + 1, z + 1];
+
+			cell.val[0] = voxels[getIndex(x, y, z)];
+			cell.val[1] = voxels[getIndex(x + 1, y, z)];
+            cell.val[2] = voxels[getIndex(x + 1, y + 1, z)];
+            cell.val[3] = voxels[getIndex(x, y + 1, z)];
+            cell.val[4] = voxels[getIndex(x, y, z + 1)];
+            cell.val[5] = voxels[getIndex(x + 1, y, z + 1)];
+            cell.val[6] = voxels[getIndex(x + 1, y + 1, z + 1)];
+            cell.val[7] = voxels[getIndex(x, y + 1, z + 1)];
+            cube(0.0, cell);
 		}
 	}
 	}
 	}
 }
 
+function cube(isovalue, cell){
+        var cubeIndex = 0;
+
+        var vertexList = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 
+        [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 
+        [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 
+        [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+
+        if (cell.val[0] < isovalue)
+            cubeIndex |= 1;
+        if (cell.val[1] < isovalue)
+            cubeIndex |= 2;
+        if (cell.val[2] < isovalue)
+            cubeIndex |= 4;
+        if (cell.val[3] < isovalue)
+            cubeIndex |= 8;
+        if (cell.val[4] < isovalue)
+            cubeIndex |= 16;
+        if (cell.val[5] < isovalue)
+            cubeIndex |= 32;
+        if (cell.val[6] < isovalue)
+            cubeIndex |= 64;
+        if (cell.val[7] < isovalue)
+            cubeIndex |= 128;
+
+        var et = edgeTable[cubeIndex];
+
+        if(et == 0)
+            return 0;
+        if(et & 1)
+            vertexList[0] = vertexInterp(cell.pos[0], cell.pos[1], cell.val[0], cell.val[1]);
+        if(et & 2)
+            vertexList[1] = vertexInterp(cell.pos[1], cell.pos[2], cell.val[1], cell.val[2]);
+        if(et & 4)
+            vertexList[2] = vertexInterp(cell.pos[2], cell.pos[3], cell.val[2], cell.val[3]);
+        if(et & 8)
+            vertexList[3] = vertexInterp(cell.pos[3], cell.pos[0], cell.val[3], cell.val[0]);
+        if(et & 16)
+            vertexList[4] = vertexInterp(cell.pos[4], cell.pos[5], cell.val[4], cell.val[5]);
+        if(et & 32)
+            vertexList[5] = vertexInterp(cell.pos[5], cell.pos[6], cell.val[5], cell.val[6]);
+        if(et & 64)
+            vertexList[6] = vertexInterp(cell.pos[6], cell.pos[7], cell.val[6], cell.val[7]);
+        if(et & 128)
+            vertexList[7] = vertexInterp(cell.pos[7], cell.pos[4], cell.val[7], cell.val[4]);
+        if(et & 256)
+            vertexList[8] = vertexInterp(cell.pos[0], cell.pos[4], cell.val[0], cell.val[4]);
+        if(et & 512)
+            vertexList[9] = vertexInterp(cell.pos[1], cell.pos[5], cell.val[1], cell.val[5]);
+        if(et & 1024)
+            vertexList[10] = vertexInterp(cell.pos[2], cell.pos[6], cell.val[2], cell.val[6]);
+        if(et & 2048)
+            vertexList[11] = vertexInterp(cell.pos[3], cell.pos[7], cell.val[3], cell.val[7]);
+
+        var tt = triTable[cubeIndex];
+		for (i = 0; i < 16; i+=3) {
+            if(tt[i] != -1)
+                addTriangle(vertexList[tt[i]], vertexList[tt[i + 1]], vertexList[tt[i + 2]]);
+        }
+}
 
 function vertexInterp(isovalue, p1, p2, valp1, valp2){
-    if (abs(isovalue - valp1) < 0.000000000001){
-        return p1
+    if (Math.abs(isovalue - valp1) < 0.000000000001){
+        return p1;
     }
-    if (abs(isovalue - valp2) < 0.000000000001){
-        return p2
+    if (Math.abs(isovalue - valp2) < 0.000000000001){
+        return p2;
     }
-    if (abs(valp1 - valp2) < 0.0000000001){
-        return p1
+    if (Math.abs(valp1 - valp2) < 0.0000000001){
+        return p1;
     }
-    mu = (isovalue - valp1) / (valp2 - valp1)
-    p = (p1[0] + mu * (p2[0] - p1[0]),
-         p1[1] + mu * (p2[1] - p1[1]),
-         p1[2] + mu * (p2[2] - p1[2]))
-    return p
+    var mu = (isovalue - valp1) / (valp2 - valp1);
+    var p = [0,0,0];
+    p[0] = p1[0] + mu * (p2[0] - p1[0]);
+    p[1] = p1[1] + mu * (p2[1] - p1[1]);
+    p[2] = p1[2] + mu * (p2[2] - p1[2]);
+    return p;
 }
 
 var edgeTable = [0x0, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,

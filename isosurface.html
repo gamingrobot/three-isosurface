@@ -34,8 +34,11 @@
 	//CONFIG
 	var voxelsize = 50;
 	var voxelscale = 100;
-	//var seed = Math.random();
-	var seed = 0.44613856147043407
+	if(window.location.hash == "#random") {
+		var seed = Math.random();
+	} else {
+		var seed = 0.44613856147043407
+	}
 	console.log(seed)
 	noise.seed(seed);
 	var voxels = new Array(Math.pow(voxelsize, 3));
@@ -91,9 +94,9 @@
 		console.log(voxels)
 
 		//MESH
-		//doVoxel();
-		doMarching();
-		
+		//doMarching();
+		doVoxel();
+				
 		//ADD MESH
 		geometry.computeBoundingSphere();
 		geometry.computeFaceNormals();
