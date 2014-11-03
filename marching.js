@@ -4,7 +4,7 @@ function doMarching(){
 	for(var z=0; z<voxelsize; z++){
 		//current voxel exists
 		if (!isEmpty(voxels[getIndex(x,y,z)])){
-			var cell = {"val": [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0], "pos": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] }
+			var cell = {"val": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], "pos": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]] }
 			
 			cell.pos[0] = [x, y, z];
             cell.pos[1] = [x + 1, y, z];
@@ -15,14 +15,22 @@ function doMarching(){
             cell.pos[6] = [x + 1, y + 1, z + 1];
             cell.pos[7] = [x, y + 1, z + 1];
 
+            var size = voxelsize - 1;
 			cell.val[0] = voxels[getIndex(x, y, z)];
-			cell.val[1] = voxels[getIndex(x + 1, y, z)];
-            cell.val[2] = voxels[getIndex(x + 1, y + 1, z)];
-            cell.val[3] = voxels[getIndex(x, y + 1, z)];
-            cell.val[4] = voxels[getIndex(x, y, z + 1)];
-            cell.val[5] = voxels[getIndex(x + 1, y, z + 1)];
-            cell.val[6] = voxels[getIndex(x + 1, y + 1, z + 1)];
-            cell.val[7] = voxels[getIndex(x, y + 1, z + 1)];
+            if(x < size)
+                cell.val[1] = voxels[getIndex(x + 1, y, z)];
+            if(x < size && y < size)
+                cell.val[2] = voxels[getIndex(x + 1, y + 1, z)];
+            if(y < size)
+                cell.val[3] = voxels[getIndex(x, y + 1, z)];
+            if(z < size)
+                cell.val[4] = voxels[getIndex(x, y, z + 1)];
+            if(x < size && z < size)
+                cell.val[5] = voxels[getIndex(x + 1, y, z + 1)];
+            if(x < size && y < size && z < size)
+                cell.val[6] = voxels[getIndex(x + 1, y + 1, z + 1)];
+            if(z < size && y < size)
+                cell.val[7] = voxels[getIndex(x, y + 1, z + 1)];
             cube(0.0, cell);
 		}
 	}
@@ -33,10 +41,10 @@ function doMarching(){
 function cube(isovalue, cell){
         var cubeIndex = 0;
 
-        var vertexList = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 
-        [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 
-        [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 
-        [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+        var vertexList = [[0, 0, 0], [0, 0, 0], [0, 0, 0], 
+        [0, 0, 0], [0, 0, 0], [0, 0, 0], 
+        [0, 0, 0], [0, 0, 0], [0, 0, 0], 
+        [0, 0, 0], [0, 0, 0], [0, 0, 0]]
 
         if (cell.val[0] < isovalue)
             cubeIndex |= 1;
@@ -60,29 +68,29 @@ function cube(isovalue, cell){
         if(et == 0)
             return 0;
         if(et & 1)
-            vertexList[0] = vertexInterp(cell.pos[0], cell.pos[1], cell.val[0], cell.val[1]);
+            vertexList[0] = vertexInterp(isovalue, cell.pos[0], cell.pos[1], cell.val[0], cell.val[1]);
         if(et & 2)
-            vertexList[1] = vertexInterp(cell.pos[1], cell.pos[2], cell.val[1], cell.val[2]);
+            vertexList[1] = vertexInterp(isovalue, cell.pos[1], cell.pos[2], cell.val[1], cell.val[2]);
         if(et & 4)
-            vertexList[2] = vertexInterp(cell.pos[2], cell.pos[3], cell.val[2], cell.val[3]);
+            vertexList[2] = vertexInterp(isovalue, cell.pos[2], cell.pos[3], cell.val[2], cell.val[3]);
         if(et & 8)
-            vertexList[3] = vertexInterp(cell.pos[3], cell.pos[0], cell.val[3], cell.val[0]);
+            vertexList[3] = vertexInterp(isovalue, cell.pos[3], cell.pos[0], cell.val[3], cell.val[0]);
         if(et & 16)
-            vertexList[4] = vertexInterp(cell.pos[4], cell.pos[5], cell.val[4], cell.val[5]);
+            vertexList[4] = vertexInterp(isovalue, cell.pos[4], cell.pos[5], cell.val[4], cell.val[5]);
         if(et & 32)
-            vertexList[5] = vertexInterp(cell.pos[5], cell.pos[6], cell.val[5], cell.val[6]);
+            vertexList[5] = vertexInterp(isovalue, cell.pos[5], cell.pos[6], cell.val[5], cell.val[6]);
         if(et & 64)
-            vertexList[6] = vertexInterp(cell.pos[6], cell.pos[7], cell.val[6], cell.val[7]);
+            vertexList[6] = vertexInterp(isovalue, cell.pos[6], cell.pos[7], cell.val[6], cell.val[7]);
         if(et & 128)
-            vertexList[7] = vertexInterp(cell.pos[7], cell.pos[4], cell.val[7], cell.val[4]);
+            vertexList[7] = vertexInterp(isovalue, cell.pos[7], cell.pos[4], cell.val[7], cell.val[4]);
         if(et & 256)
-            vertexList[8] = vertexInterp(cell.pos[0], cell.pos[4], cell.val[0], cell.val[4]);
+            vertexList[8] = vertexInterp(isovalue, cell.pos[0], cell.pos[4], cell.val[0], cell.val[4]);
         if(et & 512)
-            vertexList[9] = vertexInterp(cell.pos[1], cell.pos[5], cell.val[1], cell.val[5]);
+            vertexList[9] = vertexInterp(isovalue, cell.pos[1], cell.pos[5], cell.val[1], cell.val[5]);
         if(et & 1024)
-            vertexList[10] = vertexInterp(cell.pos[2], cell.pos[6], cell.val[2], cell.val[6]);
+            vertexList[10] = vertexInterp(isovalue, cell.pos[2], cell.pos[6], cell.val[2], cell.val[6]);
         if(et & 2048)
-            vertexList[11] = vertexInterp(cell.pos[3], cell.pos[7], cell.val[3], cell.val[7]);
+            vertexList[11] = vertexInterp(isovalue, cell.pos[3], cell.pos[7], cell.val[3], cell.val[7]);
 
         var tt = triTable[cubeIndex];
 		for (i = 0; i < 16; i+=3) {
@@ -92,20 +100,20 @@ function cube(isovalue, cell){
 }
 
 function vertexInterp(isovalue, p1, p2, valp1, valp2){
-    if (Math.abs(isovalue - valp1) < 0.000000000001){
+    if (Math.abs(isovalue - valp1) < 0.0000001){
         return p1;
     }
-    if (Math.abs(isovalue - valp2) < 0.000000000001){
+    if (Math.abs(isovalue - valp2) < 0.0000001){
         return p2;
     }
-    if (Math.abs(valp1 - valp2) < 0.0000000001){
+    if (Math.abs(valp1 - valp2) < 0.0000001){
         return p1;
     }
     var mu = (isovalue - valp1) / (valp2 - valp1);
     var p = [0,0,0];
-    p[0] = p1[0] + mu * (p2[0] - p1[0]);
-    p[1] = p1[1] + mu * (p2[1] - p1[1]);
-    p[2] = p1[2] + mu * (p2[2] - p1[2]);
+    p[0] = p1[0] + (p2[0] - p1[0]) * mu;
+    p[1] = p1[1] + (p2[1] - p1[1]) * mu;
+    p[2] = p1[2] + (p2[2] - p1[2]) * mu;
     return p;
 }
 

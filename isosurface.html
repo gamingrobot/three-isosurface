@@ -34,11 +34,12 @@
 	//CONFIG
 	var voxelsize = 50;
 	var voxelscale = 100;
-	if(window.location.hash == "#random") {
+	var seed = Math.random();
+	/*if(window.location.hash == "#random") {
 		var seed = Math.random();
 	} else {
 		var seed = 0.44613856147043407
-	}
+	}*/
 	console.log(seed)
 	noise.seed(seed);
 	var voxels = new Array(Math.pow(voxelsize, 3));
@@ -94,8 +95,11 @@
 		console.log(voxels)
 
 		//MESH
-		//doMarching();
-		doVoxel();
+		if(window.location.hash == "#marching") {
+			doMarching();
+		} else {
+			doVoxel();
+		}
 				
 		//ADD MESH
 		geometry.computeBoundingSphere();
@@ -103,6 +107,8 @@
 		geometry.computeVertexNormals(); 
 		console.log(geometry);
 		var mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
+			//side: THREE.DoubleSide,
+			//wireframe: true,
 			color: 'red' 
 		}));
 		scene.add(mesh);
